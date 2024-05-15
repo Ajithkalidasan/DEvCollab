@@ -1,0 +1,67 @@
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from .serializers import ProjectSerializer
+from project.models import Projects, Review, Tag
+"""
+	getRoutes function to retrieve available routes via HTTP methods.
+	Takes a request object and returns a JsonResponse with available routes.
+"""
+@api_view(['GET'])
+# @parser_classes([IsAuthenticated])
+def getRoutes(request):
+
+    routes = [
+        {'GET': '/api/projects'},
+        {'GET': '/api/projects/id'},
+        {'POST': '/api/projects/id/vote'},
+        {'POST': '/api/users/token'},
+        {'POST': '/api/users/token/refresh'},
+    ]
+    return Response(routes)
+@api_view(['GET'])
+def getProjects(request):
+
+    projects = Projects.objects.all()
+    serializer = ProjectSerializer(projects, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def getProject(request, pk):
+
+    project = Projects.objects.get(id=pk)
+    serializer = ProjectSerializer(project)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@parser_classes([IsAuthenticated])
+def projectVote(request, pk):
+
+    project = Projects.objects.get(id=pk)
+    user = request.user.profile
+    data = request.data
+
+    review, created = Review.objects.get_or_create(
+        owner=user,
+        project=project,
+    )
+
+    review.value = data['value']
+    review.save()
+    project.getVoteCount
+
+    serializer = ProjectSerializer(project, many=False)
+    return Response(serializer.data)
+
+
+@api_view(["DELETE"])
+def removeTag(request):
+    tagId = request.data["tag"]
+    projectId = request.data["project"]
+
+    project = Projects.objects.get(id=projectId)
+    tag = Tag.objects.get(id=tagId)
+
+    project.tags.remove(tag)
+
+    return Response("Tag was deleted!")
